@@ -23,7 +23,6 @@ spec:
         env:
         - name: MYSQL_ROOT_PASSWORD
           value: j48tu24^cnRJiX*HiaTg[}
-        - mountPath: /etc/letsencrypt/
         volumeMounts:
         - mountPath: /var/lib/mysql
           name: mariadb-storage
