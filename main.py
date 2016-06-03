@@ -253,6 +253,11 @@ def main(username, domain, service_name):
     for _, host, _ in data:
         logger.debug("Domain is ready - http://{}".format(host))
 
+    # If success, container should not died, because k8s endpoint lost
+    # ip address and service not working
+    while True:
+        time.sleep(5)
+
 
 if __name__ == '__main__':
     with open('config.yaml', 'r') as f:

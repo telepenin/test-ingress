@@ -33,11 +33,9 @@ spec:
         command:
         - python3.5
         - main.py
-        - user21
-        - user21.cl-owncloud.space
+        - user22
+        - user22.cl-owncloud.space
         - wordpress-svc
-        ports:
-          - containerPort: 8080
 
 #        volumeMounts:
 #        - mountPath: /var/lib/mysql
