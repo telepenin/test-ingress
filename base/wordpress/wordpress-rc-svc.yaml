@@ -45,6 +45,7 @@ spec:
         #restartPolicy: Never
         command:
         - python3.5
+        - main.py
         - user4
         - user4.cl-owncloud.xyz
         - wordpress-svc
