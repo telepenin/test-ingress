@@ -42,6 +42,8 @@ spec:
           value: j48tu24^cnRJiX*HiaTg[}
         ports:
           - containerPort: 80
+            protocol: TCP
+            name: http
       - image: prefer/worker:0.3
         name: worker
         imagePullPolicy: Always
