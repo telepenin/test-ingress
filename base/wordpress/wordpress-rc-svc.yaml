@@ -39,9 +39,10 @@ spec:
           value: root
         - name: WORDPRESS_DB_PASSWORD
           value: j48tu24^cnRJiX*HiaTg[}
-      - image: prefer:0.1
+      - image: prefer/worker:0.1
+        name: worker
         imagePullPolicy: Always
-        restartPolicy: Never
+        #restartPolicy: Never
         command:
         - python3.5
         - user4
