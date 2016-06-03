@@ -23,9 +23,9 @@ spec:
         env:
         - name: MYSQL_ROOT_PASSWORD
           value: j48tu24^cnRJiX*HiaTg[}
-        volumeMounts:
-        - mountPath: /var/lib/mysql
-          name: mariadb-storage
-      volumes:
-      - name: mariadb-storage
-        emptyDir: {}
+#        volumeMounts:
+#        - mountPath: /var/lib/mysql
+#          name: mariadb-storage
+#      volumes:
+#      - name: mariadb-storage
+#        emptyDir: {}
