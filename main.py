@@ -169,7 +169,7 @@ def create_ingress(ingress_rules):
             )))
 
         # Delay for correctly creating dns records
-        time.sleep(5)
+        time.sleep(10)
 
         begin_time = time.time()
 
