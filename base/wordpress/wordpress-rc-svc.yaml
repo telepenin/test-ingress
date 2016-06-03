@@ -39,6 +39,15 @@ spec:
           value: root
         - name: WORDPRESS_DB_PASSWORD
           value: j48tu24^cnRJiX*HiaTg[}
+      - image: prefer:0.1
+        imagePullPolicy: Always
+        restartPolicy: Never
+        command:
+        - python3.5
+        - user4
+        - user4.cl-owncloud.xyz
+        - wordpress-svc
+
 #        volumeMounts:
 #        - mountPath: /var/lib/mysql
 #          name: mariadb-storage
