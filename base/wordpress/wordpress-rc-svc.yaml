@@ -12,6 +12,7 @@ spec:
     name: http
   selector:
     app: wordpress
+    type: test
 ---
 apiVersion: v1
 kind: ReplicationController
@@ -23,6 +24,7 @@ spec:
   replicas: 1
   selector:
     app: wordpress
+    type: test
   template:
     metadata:
       labels:
@@ -42,16 +44,14 @@ spec:
           value: j48tu24^cnRJiX*HiaTg[}
         ports:
           - containerPort: 80
-            protocol: TCP
-            name: http
       - image: prefer/worker:0.3
         name: worker
         imagePullPolicy: Always
         command:
         - python3.5
         - main.py
-        - user6
-        - user6.cl-owncloud.space
+        - user21
+        - user21.cl-owncloud.space
         - wordpress-svc
 
 #        volumeMounts:
