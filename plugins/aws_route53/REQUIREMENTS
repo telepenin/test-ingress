@@ -1,1 +1,4 @@
-route53==1.0
+pytz
+nose
+lxml
+requests
