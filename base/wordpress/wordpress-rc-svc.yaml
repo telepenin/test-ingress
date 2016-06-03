@@ -12,6 +12,7 @@ spec:
     name: http
   selector:
     app: wordpress
+    name: wordpress
 ---
 apiVersion: v1
 kind: ReplicationController
@@ -40,10 +41,12 @@ spec:
           value: root
         - name: WORDPRESS_DB_PASSWORD
           value: j48tu24^cnRJiX*HiaTg[}
+        ports:
+          - containerPort: 80
+            protocol: TCP
       - image: prefer/worker:0.3
         name: worker
         imagePullPolicy: Always
-        #restartPolicy: Never
         command:
         - python3.5
         - main.py
