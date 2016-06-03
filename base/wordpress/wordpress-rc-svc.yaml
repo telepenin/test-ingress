@@ -29,7 +29,7 @@ spec:
         app: wordpress
     spec:
       containers:
-      - image: wordpress:4.5.2-fpm
+      - image: wordpress:4.5.2-apache
         imagePullPolicy: Always
         name: wordpress
         env:
