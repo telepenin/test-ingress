@@ -5,6 +5,7 @@ RUN apt-get install -y git python3.5 python3-pip
 
 COPY . /opt/certbot
 WORKDIR /opt/kd-lb
+RUN cd /opt/kd-lb
 
 RUN pip3 install -r REQUIREMENTS
 #RUN pip3 install -r plugins/aws_route53/REQUIREMENTS
