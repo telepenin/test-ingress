@@ -1,7 +1,7 @@
 FROM ubuntu:16.04
 
 RUN apt-get update
-RUN apt-get install -y git python3.5 python3-pip
+RUN apt-get install -y git python3.5 python3-pip python3-lxml
 
 WORKDIR /opt/kd-lb
 

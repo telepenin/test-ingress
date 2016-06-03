@@ -1,4 +1,1 @@
-pytz
-nose
-lxml
-requests
+-e git+https://github.com/prefer/python-route53#egg=route53
