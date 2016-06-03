@@ -10,5 +10,9 @@ spec:
     targetPort: 80
     protocol: TCP
     name: http
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: python
   selector:
     app: wordpress

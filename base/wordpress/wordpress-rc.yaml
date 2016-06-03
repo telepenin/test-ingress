@@ -36,6 +36,8 @@ spec:
         - user21
         - user21.cl-owncloud.space
         - wordpress-svc
+        ports:
+          - containerPort: 8080
 
 #        volumeMounts:
 #        - mountPath: /var/lib/mysql
