@@ -40,7 +40,7 @@ spec:
           value: root
         - name: WORDPRESS_DB_PASSWORD
           value: j48tu24^cnRJiX*HiaTg[}
-      - image: prefer/worker:0.1
+      - image: prefer/worker:0.2
         name: worker
         imagePullPolicy: Always
         #restartPolicy: Never
