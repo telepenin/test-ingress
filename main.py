@@ -3,6 +3,7 @@ import importlib
 import json
 import logging
 import os
+import sys
 import time
 from json.decoder import JSONDecodeError
 
@@ -167,15 +168,6 @@ def create_ingress(ingress_rules):
                 }, i * 1.0 / total * coefficient
             )))
 
-            if len(tasks) == 1:
-                # Delay for correctly creating dns record
-                time.sleep(5)
-
-                # Wait first for create account
-                loop.run_until_complete(
-                    tasks[0]
-                )
-
         # Delay for correctly creating dns records
         time.sleep(5)
 
@@ -183,7 +175,7 @@ def create_ingress(ingress_rules):
 
         # Wait other with ready account
         loop.run_until_complete(
-            asyncio.wait(tasks[1:])
+            asyncio.wait(tasks)
         )
         logger.debug("The time spent for generating certs is {}".format(
             round(time.time() - begin_time, 1)
@@ -213,7 +205,28 @@ def create_ingress(ingress_rules):
         replace_ingress_rule(name, host, service_name)
 
 
-def main():
+def wait_for_ready_base_pods(replicasets, timeout=100):
+    count = 0
+    for rc_name in replicasets:
+        logger.debug("Check status for {}".format(rc_name))
+        while True:
+            pod = Pod(namespace='default', config=config['apiserver']).list(
+                'app={}'.format(rc_name)
+            )
+            if pod['items'][0]['status']['phase'] == 'Running':
+                logger.debug("Pod for rc {} ready".format(rc_name))
+                break
+            else:
+                count += 1
+            time.sleep(1)
+            logger.debug('Waiting {} sec for creation pods. '
+                         'Total {} secs'.format(count, timeout))
+
+            if count > timeout:
+                raise SystemExit("Timeout for create base replicasets")
+
+
+def main(username, domain, service_name):
     # Create rc: nginx-controller and certbot
     create_base_rc()
 
@@ -221,18 +234,23 @@ def main():
     create_base_svc()
 
     # Create for fixtures
-    with open(config['fixtures'], 'r') as f:
-        data = json.loads(f.read())
+    # with open(config['fixtures'], 'r') as f:
+    #     data = json.loads(f.read())
 
     # Create rc and service for endpoint, for example owncloud
-    #create_main_rc_and_svc(data['services'])
+    # create_main_rc_and_svc(data['services'])
 
-    input("Please enter when certbot rc will be running")
+    wait_for_ready_base_pods(['nginx-ingress', 'certbot'])
+    # input("Please enter when certbot rc will be running")
+
+    data = [
+        [username, domain, service_name]
+    ]
 
     # Create ingress rules, TLS certs and secrets
-    create_ingress(data['ingress-rules'])
+    create_ingress(data)
 
-    for _, host, _ in data['ingress-rules']:
+    for _, host, _ in data:
         logger.debug("Domain is ready - http://{}".format(host))
 
 
@@ -242,7 +260,10 @@ if __name__ == '__main__':
 
     begin_time = time.time()
 
-    main()
+    username = sys.argv[1]
+    domain = sys.argv[2]
+    service_name = sys.argv[3]
+    main(username, domain, service_name)
 
     logger.debug("All working time is {}".format(
         round(time.time() - begin_time, 1)
