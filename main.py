@@ -46,8 +46,8 @@ def create_base_svc():
             svc.create(yaml.load(f.read()))
 
 
-def create_main_rc_and_svc(data):
-    for name in data['services']:
+def create_main_rc_and_svc(services):
+    for name in services:
         rc = ReplicationController(namespace='default',
                                    config=config['apiserver'])
         with open(os.path.join('templates', 'rc-rule.yaml.j2'), 'r') as f:
@@ -225,7 +225,7 @@ def main():
         data = json.loads(f.read())
 
     # Create rc and service for endpoint, for example owncloud
-    create_main_rc_and_svc(data)
+    #create_main_rc_and_svc(data['services'])
 
     input("Please enter when certbot rc will be running")
 
@@ -241,6 +241,7 @@ if __name__ == '__main__':
         config = yaml.load(f.read())
 
     begin_time = time.time()
+
     main()
 
     logger.debug("All working time is {}".format(
