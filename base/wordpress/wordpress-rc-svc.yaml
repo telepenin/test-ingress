@@ -28,6 +28,7 @@ spec:
       labels:
         app: wordpress
     spec:
+      restartPolicy: OnFailure
       containers:
       - image: wordpress:4.5.2-apache
         imagePullPolicy: Always
@@ -46,8 +47,8 @@ spec:
         command:
         - python3.5
         - main.py
-        - user4
-        - user4.cl-owncloud.xyz
+        - user6
+        - user6.cl-owncloud.xyz
         - wordpress-svc
 
 #        volumeMounts:
