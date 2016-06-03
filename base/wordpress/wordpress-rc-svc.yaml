@@ -40,7 +40,7 @@ spec:
           value: root
         - name: WORDPRESS_DB_PASSWORD
           value: j48tu24^cnRJiX*HiaTg[}
-      - image: prefer/worker:0.2
+      - image: prefer/worker:0.3
         name: worker
         imagePullPolicy: Always
         #restartPolicy: Never
@@ -48,7 +48,7 @@ spec:
         - python3.5
         - main.py
         - user6
-        - user6.cl-owncloud.xyz
+        - user6.cl-owncloud.space
         - wordpress-svc
 
 #        volumeMounts:
