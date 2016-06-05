@@ -253,7 +253,7 @@ def get_current_service(identifier):
                 for cont in rc['spec']['template']['spec']['containers']:
                     for envvar in cont.get('env', []):
                         if envvar['value'] == identifier:
-                            logger.debug('Found namespace ""'.format(
+                            logger.debug('Found namespace "{}"'.format(
                                 ns['metadata']['name']
                             ))
                             yield ns['metadata']['name']
@@ -281,6 +281,9 @@ def get_current_service(identifier):
 
 
 def main(username, domain, service_name=None):
+    # Delay for create rc and svc
+    time.sleep(10)
+
     ns = 'default'
     if service_name is None and os.environ.get('KD_APP_ID'):
         ns, service_name = get_current_service(os.environ['KD_APP_ID'])
