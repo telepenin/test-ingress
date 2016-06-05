@@ -66,7 +66,7 @@ spec:
       restartPolicy: OnFailure
       containers:
       - image: wordpress:4.5.2-apache
-        imagePullPolicy: Always
+        #imagePullPolicy: Always
         name: wordpress
         env:
         - name: WORDPRESS_DB_HOST
@@ -77,9 +77,9 @@ spec:
           value: j48tu24^cnRJiX*HiaTg[}
         ports:
           - containerPort: 80
-      - image: prefer/worker:0.5
+      - image: prefer/worker:0.6
         name: worker
-        imagePullPolicy: Always
+        #imagePullPolicy: Always
         env:
         - name: KD_APP_ID
           value: $PD_RAND|default:autogen|PD rand$

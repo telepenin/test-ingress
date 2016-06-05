@@ -251,7 +251,7 @@ def get_current_service(identifier):
                     config=config['apiserver']).list()
                 for rc in rc_list['items']:
                     for cont in rc['spec']['template']['spec']['containers']:
-                        for envvar in cont['env']:
+                        for envvar in cont.get('env', []):
                             if envvar['value'] == identifier:
                                 yield ns['metadata']['name']
 
