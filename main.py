@@ -245,12 +245,20 @@ def get_current_service(identifier):
     def _get_namespace():
         namespaces = Namespace(config=config['apiserver']).list()
         for ns in namespaces['items']:
-
+            logger.debug("Found namespace: {}".format(
+                ns['metadata']['name']
+            ))
             rc_list = ReplicationController(
                 namespace=ns['metadata']['name'],
                 config=config['apiserver']).list()
             for rc in rc_list['items']:
+                logger.debug("Found rc: {}".format(
+                    rc['metadata']['name']
+                ))
                 for cont in rc['spec']['template']['spec']['containers']:
+                    logger.debug("Found cont: {}".format(
+                        cont.get('name')
+                    ))
                     for envvar in cont.get('env', []):
                         if envvar['value'] == identifier:
                             logger.debug('Found namespace "{}"'.format(
@@ -274,7 +282,7 @@ def get_current_service(identifier):
             return ns_name, service_name
     else:
         logger.debug(
-            'Service with identifier "{}" not found'.format(
+            'Rc with identifier "{}" not found'.format(
                 identifier)
         )
         raise SystemExit()
@@ -282,7 +290,7 @@ def get_current_service(identifier):
 
 def main(username, domain, service_name=None):
     # Delay for create rc and svc
-    time.sleep(10)
+    #time.sleep(10)
 
     ns = 'default'
     if service_name is None and os.environ.get('KD_APP_ID'):
