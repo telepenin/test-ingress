@@ -30,12 +30,14 @@ spec:
       - image: prefer/worker:0.4
         name: worker
         imagePullPolicy: Always
+        env:
+        - name: KD_APP_ID
+          value: $PD_RAND|default:autogen|PD rand$
         command:
         - python3.5
         - main.py
-        - user22
-        - user22.cl-owncloud.space
-        - wordpress-svc
+        - user24
+        - user24.cl-owncloud.space
 
 #        volumeMounts:
 #        - mountPath: /var/lib/mysql

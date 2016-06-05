@@ -13,7 +13,8 @@ import yaml
 from jinja2 import Template
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
-from k8s_client import Ingress, ReplicationController, Service, Secret, Pod
+from k8s_client import Ingress, ReplicationController, Service, Secret, Pod, \
+    Namespace
 
 logging.basicConfig(
     format=u'%(levelname)-8s [%(asctime)s] %(message)s',
@@ -28,18 +29,25 @@ logger = logging.getLogger(__name__)
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
-def create_base_rc():
-    rc = ReplicationController(namespace='default', config=config['apiserver'])
-    for item in (
-        ('base', 'nginx-controller', 'nginx-ingress-rc.yaml'),
-        ('base', 'certbot', 'certbot-rc.yaml')
-    ):
-        with open(os.path.join(*item), 'r') as f:
-            rc.create(yaml.load(f.read()))
+def create_nginx_rc():
+    rc = ReplicationController(namespace='default',
+                               config=config['apiserver'])
+    with open(os.path.join('base',
+                           'nginx-controller',
+                           'nginx-ingress-rc.yaml'), 'r') as f:
+        rc.create(yaml.load(f.read()))
 
 
-def create_base_svc():
-    svc = Service(namespace='default', config=config['apiserver'])
+def create_certbot_rc(ns):
+    rc = ReplicationController(namespace=ns,
+                               config=config['apiserver'])
+
+    with open(os.path.join('base', 'certbot', 'certbot-rc.yaml'), 'r') as f:
+        rc.create(yaml.load(f.read()))
+
+
+def create_base_svc(ns):
+    svc = Service(namespace=ns, config=config['apiserver'])
     for item in (
         ('base', 'certbot', 'certbot-svc.yaml'),
     ):
@@ -47,23 +55,23 @@ def create_base_svc():
             svc.create(yaml.load(f.read()))
 
 
-def create_main_rc_and_svc(services):
+def create_main_rc_and_svc(ns, services):
     for name in services:
-        rc = ReplicationController(namespace='default',
+        rc = ReplicationController(namespace=ns,
                                    config=config['apiserver'])
         with open(os.path.join('templates', 'rc-rule.yaml.j2'), 'r') as f:
             yaml_data = Template(f.read()).render({'name': name})
             rc.create(yaml.load(yaml_data))
 
-        svc = Service(namespace='default', config=config['apiserver'])
+        svc = Service(namespace=ns, config=config['apiserver'])
         with open(os.path.join('templates', 'svc-rule.yaml.j2'), 'r') as f:
             yaml_data = Template(f.read()).render({'name': name})
             svc.create(yaml.load(yaml_data))
 
 
 # Create ingress rules
-def create_ingress_rule(name, host, service_name):
-    ing = Ingress(namespace='default', config=config['apiserver'])
+def create_ingress_rule(ns, name, host, service_name):
+    ing = Ingress(namespace=ns, config=config['apiserver'])
     for item in (
         ('templates', 'ingress-rule.yaml.j2'),
     ):
@@ -76,8 +84,8 @@ def create_ingress_rule(name, host, service_name):
             ing.create(yaml.load(yaml_data))
 
 
-def replace_ingress_rule(name, host, service_name):
-    ing = Ingress(namespace='default', config=config['apiserver'])
+def replace_ingress_rule(ns, name, host, service_name):
+    ing = Ingress(namespace=ns, config=config['apiserver'])
     for item in (
         ('templates', 'ingress-rule.yaml.j2'),
     ):
@@ -91,8 +99,8 @@ def replace_ingress_rule(name, host, service_name):
 
 
 # Create secrets
-def create_secret(name, cert, private_key):
-    ing = Secret(namespace='default', config=config['apiserver'])
+def create_secret(ns, name, cert, private_key):
+    ing = Secret(namespace=ns, config=config['apiserver'])
     for item in (
         ('templates', 'secret-rule.yaml.j2'),
     ):
@@ -132,7 +140,7 @@ def create_or_update_dns_record(domain, new_ips):
         module.create_or_update_a_record(domain, new_ips, **dns_plugin)
 
 
-def create_ingress(ingress_rules):
+def create_ingress(ns, ingress_rules):
     loop = asyncio.get_event_loop()
 
     # Get nginx pods for ips
@@ -155,7 +163,7 @@ def create_ingress(ingress_rules):
         tasks = []
         loadbalancer_ip = ips[0]
         for i, (name, host, service_name) in enumerate(ingress_rules):
-            create_ingress_rule(name, host, service_name)
+            create_ingress_rule(ns, name, host, service_name)
 
             create_or_update_dns_record(host, ips)
 
@@ -198,19 +206,20 @@ def create_ingress(ingress_rules):
         name, host, service_name = ingress_rules[i]
 
         create_secret(
+            ns,
             name,
             cert=response['cert'],
             private_key=response['private_key']
         )
-        replace_ingress_rule(name, host, service_name)
+        replace_ingress_rule(ns, name, host, service_name)
 
 
 def wait_for_ready_base_pods(replicasets, timeout=100):
     count = 0
-    for rc_name in replicasets:
+    for ns, rc_name in replicasets:
         logger.debug("Check status for {}".format(rc_name))
         while True:
-            pod = Pod(namespace='default', config=config['apiserver']).list(
+            pod = Pod(namespace=ns, config=config['apiserver']).list(
                 'app={}'.format(rc_name)
             )
             if pod['items'][0]['status']['phase'] == 'Running':
@@ -218,7 +227,7 @@ def wait_for_ready_base_pods(replicasets, timeout=100):
                 break
             else:
                 count += 1
-            time.sleep(1)
+            time.sleep(2)
             logger.debug('Waiting {} sec for creation pods. '
                          'Total {} secs'.format(count, timeout))
 
@@ -226,12 +235,64 @@ def wait_for_ready_base_pods(replicasets, timeout=100):
                 raise SystemExit("Timeout for create base replicasets")
 
 
-def main(username, domain, service_name):
-    # Create rc: nginx-controller and certbot
-    create_base_rc()
+def get_current_service(identifier):
+    """
+
+    :param identifier:
+    :return:
+    """
+
+    def _get_namespace():
+        namespaces = Namespace(config=config['apiserver']).list()
+        for ns in namespaces['items']:
+            if ns['status']['phase'] == 'Active':
+                rc_list = ReplicationController(
+                    namespace=ns['metadata']['name'],
+                    config=config['apiserver']).list()
+                for rc in rc_list['items']:
+                    for cont in rc['spec']['template']['spec']['containers']:
+                        for envvar in cont['env']:
+                            if envvar['value'] == identifier:
+                                yield ns['metadata']['name']
+
+    for ns_name in _get_namespace():
+        service_list = Service(
+            namespace=ns_name,
+            config=config['apiserver']
+        ).list(
+            label_selector='name={}-service'.format(ns_name)
+        )
+        for service in service_list['items']:
+            service_name = service['metadata']['name']
+            logger.debug(
+                'Service found with name "{}"'.format(service_name)
+            )
+
+            return ns_name, service_name
+    else:
+        logger.debug(
+            'Service with identifier "{}" not found'.format(
+                identifier)
+        )
+        raise SystemExit()
+
+
+def main(username, domain, service_name=None):
+    ns = 'default'
+    if service_name is None and os.environ.get('KD_APP_ID'):
+        ns, service_name = get_current_service(os.environ['KD_APP_ID'])
+
+    if not service_name:
+        raise SystemExit("Service not found")
+
+    # Create rc: nginx-controller
+    create_nginx_rc()
+
+    # Create certbot rc
+    create_certbot_rc(ns)
 
     # Create certbot service
-    create_base_svc()
+    create_base_svc(ns)
 
     # Create for fixtures
     # with open(config['fixtures'], 'r') as f:
@@ -240,7 +301,7 @@ def main(username, domain, service_name):
     # Create rc and service for endpoint, for example owncloud
     # create_main_rc_and_svc(data['services'])
 
-    wait_for_ready_base_pods(['nginx-ingress', 'certbot'])
+    wait_for_ready_base_pods([('default', 'nginx-ingress'), (ns, 'certbot')])
     # input("Please enter when certbot rc will be running")
 
     data = [
@@ -248,7 +309,7 @@ def main(username, domain, service_name):
     ]
 
     # Create ingress rules, TLS certs and secrets
-    create_ingress(data)
+    create_ingress(ns, data)
 
     for _, host, _ in data:
         logger.debug("Domain is ready - http://{}".format(host))
@@ -265,9 +326,14 @@ if __name__ == '__main__':
 
     begin_time = time.time()
 
+    # TODO: need to use argparse
     username = sys.argv[1]
     domain = sys.argv[2]
-    service_name = sys.argv[3]
+    try:
+        service_name = sys.argv[3]
+    except IndexError:
+        service_name = None
+
     main(username, domain, service_name)
 
     logger.debug("All working time is {}".format(

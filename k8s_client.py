@@ -45,7 +45,7 @@ class KubernetesOperations(KubernetesClient):
     entity = None
     path = '/api/v1/namespaces/{namespace}/{entity}'
 
-    def __init__(self, namespace, *args, **kwargs):
+    def __init__(self, namespace=None, *args, **kwargs):
         super(KubernetesOperations, self).__init__(*args, **kwargs)
         self.namespace = namespace
 
@@ -86,13 +86,62 @@ class KubernetesOperations(KubernetesClient):
 class ReplicationController(KubernetesOperations):
     entity = 'replicationcontrollers'
 
+    def list(self, label_selector=None, field_selector=None):
+        path = self.path.format(
+            **{'namespace': self.namespace,
+               'entity': self.entity
+               }
+        )
+        logger.debug('{} {}: "{}"'.format(
+            'List',
+            self.__class__.__name__,
+            'list')
+        )
+
+        return self._request('GET', path, {
+            'labelSelector': label_selector,
+            'fieldSelector': field_selector,
+        })
+
 
 class Service(KubernetesOperations):
     entity = 'services'
 
+    def list(self, label_selector=None, field_selector=None):
+        path = self.path.format(
+            **{'namespace': self.namespace,
+               'entity': self.entity}
+        )
+        logger.debug('{} {}: "{}"'.format(
+            'List',
+            self.__class__.__name__,
+            'list')
+        )
+
+        return self._request('GET', path, {
+            'labelSelector': label_selector,
+            'fieldSelector': field_selector,
+        })
+
 
 class Secret(KubernetesOperations):
     entity = 'secrets'
+
+
+class Namespace(KubernetesOperations):
+    path = '/api/v1/namespaces'
+
+    def list(self, label_selector=None, field_selector=None):
+        logger.debug('{} {}: "{}"'.format(
+            'List',
+            self.__class__.__name__,
+            'list')
+        )
+
+        return self._request('GET', self.path, {
+            'labelSelector': label_selector,
+            'fieldSelector': field_selector,
+        })
 
 
 class Pod(KubernetesOperations):
