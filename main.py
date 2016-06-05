@@ -245,15 +245,18 @@ def get_current_service(identifier):
     def _get_namespace():
         namespaces = Namespace(config=config['apiserver']).list()
         for ns in namespaces['items']:
-            if ns['status']['phase'] == 'Active':
-                rc_list = ReplicationController(
-                    namespace=ns['metadata']['name'],
-                    config=config['apiserver']).list()
-                for rc in rc_list['items']:
-                    for cont in rc['spec']['template']['spec']['containers']:
-                        for envvar in cont.get('env', []):
-                            if envvar['value'] == identifier:
-                                yield ns['metadata']['name']
+
+            rc_list = ReplicationController(
+                namespace=ns['metadata']['name'],
+                config=config['apiserver']).list()
+            for rc in rc_list['items']:
+                for cont in rc['spec']['template']['spec']['containers']:
+                    for envvar in cont.get('env', []):
+                        if envvar['value'] == identifier:
+                            logger.debug('Found namespace ""'.format(
+                                ns['metadata']['name']
+                            ))
+                            yield ns['metadata']['name']
 
     for ns_name in _get_namespace():
         service_list = Service(
