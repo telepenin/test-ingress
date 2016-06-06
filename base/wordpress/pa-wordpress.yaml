@@ -95,7 +95,7 @@ spec:
         - mountPath: /var/www/html
           name: wordpress-persistent-storage
         workingDir: /var/www/html
-      - image: prefer/worker:0.13
+      - image: prefer/worker:0.14
         name: worker
         env:
         - name: KD_APP_ID
