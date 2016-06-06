@@ -30,6 +30,11 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
 def create_nginx_rc():
+    """
+    Create nginx LB replicaset
+
+    :return:
+    """
     rc = ReplicationController(namespace='default',
                                config=config['apiserver'])
     with open(os.path.join('base',
@@ -39,6 +44,13 @@ def create_nginx_rc():
 
 
 def create_certbot_rc(ns):
+    """
+    Create certbot replicaset for generate TLS cert by letsencrypt
+    for namespace
+
+    :param ns: namespace
+    :return:
+    """
     rc = ReplicationController(namespace=ns,
                                config=config['apiserver'])
 
@@ -47,6 +59,12 @@ def create_certbot_rc(ns):
 
 
 def create_base_svc(ns):
+    """
+    Create certbot service for generate TLS cert by letsencrypt for namespace
+
+    :param ns: namespace
+    :return:
+    """
     svc = Service(namespace=ns, config=config['apiserver'])
     for item in (
         ('base', 'certbot', 'certbot-svc.yaml'),
@@ -55,22 +73,16 @@ def create_base_svc(ns):
             svc.create(yaml.load(f.read()))
 
 
-def create_main_rc_and_svc(ns, services):
-    for name in services:
-        rc = ReplicationController(namespace=ns,
-                                   config=config['apiserver'])
-        with open(os.path.join('templates', 'rc-rule.yaml.j2'), 'r') as f:
-            yaml_data = Template(f.read()).render({'name': name})
-            rc.create(yaml.load(yaml_data))
-
-        svc = Service(namespace=ns, config=config['apiserver'])
-        with open(os.path.join('templates', 'svc-rule.yaml.j2'), 'r') as f:
-            yaml_data = Template(f.read()).render({'name': name})
-            svc.create(yaml.load(yaml_data))
-
-
-# Create ingress rules
 def create_ingress_rule(ns, name, host, service_name):
+    """
+    Create ingress rules for LB in namespace
+
+    :param ns: namespace
+    :param name: name for ingress rule. Postfix see in template
+    :param host: domain name for ingress rule
+    :param service_name: service as a backend for ingress rule
+    :return:
+    """
     ing = Ingress(namespace=ns, config=config['apiserver'])
     for item in (
         ('templates', 'ingress-rule.yaml.j2'),
@@ -85,6 +97,16 @@ def create_ingress_rule(ns, name, host, service_name):
 
 
 def replace_ingress_rule(ns, name, host, service_name):
+    """
+    Replace ingress rule. It needs for regenerate LB config
+    (for example nginx.conf) with support TLS/secrets
+
+    :param ns: namespace
+    :param name: name for ingress rule. Postfix see in template
+    :param host: domain name for ingress rule
+    :param service_name: service as a backend for ingress rule
+    :return:
+    """
     ing = Ingress(namespace=ns, config=config['apiserver'])
     for item in (
         ('templates', 'ingress-rule.yaml.j2'),
@@ -98,8 +120,16 @@ def replace_ingress_rule(ns, name, host, service_name):
             ing.replace('{}-ingress'.format(name), yaml.load(yaml_data))
 
 
-# Create secrets
 def create_secret(ns, name, cert, private_key):
+    """
+    Create secret for access LB with TLS certificate
+
+    :param ns: namespace
+    :param name: name of secret. Postfix see in template
+    :param cert: base64 certificate
+    :param private_key: base64 private key
+    :return:
+    """
     ing = Secret(namespace=ns, config=config['apiserver'])
     for item in (
         ('templates', 'secret-rule.yaml.j2'),
@@ -114,6 +144,15 @@ def create_secret(ns, name, cert, private_key):
 
 
 async def fetch(session, url, data, seconds):
+    """
+    Post to certbot server for generating TLS certificate
+
+    :param aiohttp.ClientSession session:
+    :param str url: URL for certbot container
+    :param dict data: data for generating cert
+    :param seconds: not used currently, for delay between tasks
+    :return:
+    """
     # await asyncio.sleep(seconds)
     logger.debug('Run generating cert for {} after {} sec'.format(
         data['domains'], seconds))
@@ -132,6 +171,13 @@ async def fetch(session, url, data, seconds):
 
 
 def create_or_update_dns_record(domain, new_ips):
+    """
+    Connect to DNS plugin if it is using
+
+    :param domain: domain name (zone name)
+    :param new_ips: ip set of load balancers
+    :return:
+    """
     if config.get('plugins') and config['plugins'].get('dns'):
         dns_plugin = config['plugins']['dns']
         name = dns_plugin['name']
@@ -141,6 +187,17 @@ def create_or_update_dns_record(domain, new_ips):
 
 
 def create_ingress(ns, ingress_rules):
+    """
+    * Create ingress rules
+    * Getting ip of LB
+    * Generate TLS cert for host
+    * Create secret for TLS
+    * Regenerate ingress rules for regenerate LB config
+
+    :param ns: namespace
+    :param tuple ingress_rules: tuple of name, host, service_name
+    :return:
+    """
     loop = asyncio.get_event_loop()
 
     # Get nginx pods for ips
@@ -215,6 +272,13 @@ def create_ingress(ns, ingress_rules):
 
 
 def wait_for_ready_base_pods(replicasets, timeout=100):
+    """
+    Wait for ready replicaset
+
+    :param replicasets: replicaset, for example nginx-load-balancer, certbot
+    :param timeout: count tacts during need wait
+    :return:
+    """
     count = 0
     for ns, rc_name in replicasets:
         logger.debug("Check status for {}".format(rc_name))
@@ -237,9 +301,11 @@ def wait_for_ready_base_pods(replicasets, timeout=100):
 
 def get_current_service(identifier):
     """
+    Search current service name for identifier
+    identifier should be use as envvar in any container
 
-    :param identifier:
-    :return:
+    :param str identifier: unique identifier
+    :return tuple: namespace, service_name
     """
 
     def _get_namespace():
@@ -290,7 +356,7 @@ def get_current_service(identifier):
 
 def main(username, domain, service_name=None):
     # Delay for create rc and svc
-    #time.sleep(10)
+    # time.sleep(10)
 
     ns = 'default'
     if service_name is None and os.environ.get('KD_APP_ID'):
@@ -311,9 +377,6 @@ def main(username, domain, service_name=None):
     # Create for fixtures
     # with open(config['fixtures'], 'r') as f:
     #     data = json.loads(f.read())
-
-    # Create rc and service for endpoint, for example owncloud
-    # create_main_rc_and_svc(data['services'])
 
     wait_for_ready_base_pods([('default', 'nginx-ingress'), (ns, 'certbot')])
     # input("Please enter when certbot rc will be running")
