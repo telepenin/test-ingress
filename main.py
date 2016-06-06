@@ -214,7 +214,7 @@ def create_ingress(ns, ingress_rules):
         additional_params = [
             '--keep-until-expiring'
         ]
-        if config['certbot']['staging']:
+        if os.environ.get('KD_CERT_STAGING'):
             additional_params.append('--staging')
 
         tasks = []
@@ -382,6 +382,7 @@ def main(username, domain, service_name=None):
     #     data = json.loads(f.read())
 
     wait_for_ready_base_pods([('default', 'nginx-ingress'), (ns, 'certbot')])
+    time.sleep(2)  # delay for start services in the containers
     # input("Please enter when certbot rc will be running")
 
     data = [
