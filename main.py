@@ -206,7 +206,8 @@ def create_ingress(ns, ingress_rules):
     )
     ips = [po['status']['hostIP'] for po in pod['items']]
 
-    with aiohttp.ClientSession(loop=loop) as session:
+    connector = aiohttp.TCPConnector(verify_ssl=False)
+    with aiohttp.ClientSession(loop=loop, connector=connector) as session:
         total = len(ingress_rules)
         # 2 sec delay between cert generating - experimental
         coefficient = 0.5 * total
@@ -249,6 +250,11 @@ def create_ingress(ns, ingress_rules):
         responses = []
         error = False
         for task in tasks:
+            result = task.result()
+            if result == '405: Method Not Allowed':
+                logger.debug("HTTPS already works")
+                continue
+
             try:
                 result = json.loads(task.result())
             except JSONDecodeError:

@@ -101,7 +101,7 @@ spec:
         - name: KD_APP_ID
           value: $PD_RAND|default:autogen|PD rand$
         - name: KD_CERT_STAGING
-          value: true
+          value: Staging
         command:
         - python3.5
         - main.py
