@@ -195,7 +195,7 @@ def create_ingress(ns, ingress_rules):
     * Regenerate ingress rules for regenerate LB config
 
     :param ns: namespace
-    :param tuple ingress_rules: tuple of name, host, service_name
+    :param list ingress_rules: tuple of name, host, service_name
     :return:
     """
     loop = asyncio.get_event_loop()
@@ -257,7 +257,7 @@ def create_ingress(ns, ingress_rules):
             else:
                 responses.append(result)
         if error:
-            raise SystemExit()
+            raise RuntimeError()
 
     for i, response in enumerate(responses):
         name, host, service_name = ingress_rules[i]
@@ -299,7 +299,7 @@ def wait_for_ready_base_pods(replicasets, timeout=100):
                          'Total {} secs'.format(count, timeout))
 
             if count > timeout:
-                raise SystemExit("Timeout for create base replicasets")
+                raise RuntimeError("Timeout for create base replicasets")
 
 
 def get_current_service(identifier):
@@ -354,7 +354,7 @@ def get_current_service(identifier):
             'Rc with identifier "{}" not found'.format(
                 identifier)
         )
-        raise SystemExit()
+        raise RuntimeError()
 
 
 def main(username, domain, service_name=None):
@@ -366,7 +366,7 @@ def main(username, domain, service_name=None):
         ns, service_name = get_current_service(os.environ['KD_APP_ID'])
 
     if not service_name:
-        raise SystemExit("Service not found")
+        raise RuntimeError("Service not found")
 
     # Create rc: nginx-controller
     create_nginx_rc()

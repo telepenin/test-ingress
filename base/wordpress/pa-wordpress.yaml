@@ -75,7 +75,7 @@ spec:
       - name: wordpress-persistent-storage
         persistentDisk:
           pdName: wordpress_www_$USERNAME$
-      restartPolicy: OnFailure
+      restartPolicy: Always
       containers:
       - image: wordpress:4.5.2-apache
         #imagePullPolicy: Always
@@ -95,7 +95,7 @@ spec:
         - mountPath: /var/www/html
           name: wordpress-persistent-storage
         workingDir: /var/www/html
-      - image: prefer/worker:0.10
+      - image: prefer/worker:0.12
         name: worker
         env:
         - name: KD_APP_ID
