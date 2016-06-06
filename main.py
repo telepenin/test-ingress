@@ -286,7 +286,10 @@ def wait_for_ready_base_pods(replicasets, timeout=100):
             pod = Pod(namespace=ns, config=config['apiserver']).list(
                 'app={}'.format(rc_name)
             )
-            if pod['items'][0]['status']['phase'] == 'Running':
+            if len(pod['items']) > 0 and \
+                    pod['items'][0].get(
+                        'status', {}
+                    ).get('phase', None) == 'Running':
                 logger.debug("Pod for rc {} ready".format(rc_name))
                 break
             else:
