@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ReplicationController
 metadata:
   name: $APP_NAME|default:wordpress| Enter your application name$
-  user: $USERNAME|default:user-example|Please enter user for domain "cl-owncloud.space"$
+  user: $USERNAME|default:user|Please enter user for domain "cl-owncloud.space"$
 kuberdock:
   packageID: 0
   preDescription: |
@@ -14,8 +14,7 @@ kuberdock:
   postDescription: |
     You have installed [b]WordPress![/b]
     Please find more information about WordPress software on the official website [url]https://wordpress.com[/url]
-    To access [b]WordPress[/b] use this link: [url]http://$USERNAME$.cl-owncloud.space[/url] after
-    installation
+    To access [b]WordPress[/b] use this link: [url]http://$USERNAME$.cl-owncloud.space[/url] after installation
   appPackages:
     - name: S
       goodFor: beginner
@@ -26,9 +25,12 @@ kuberdock:
           kubeType: 1
           containers:
             - name: worker
-              kubes: 5
+              kubes: 1
             - name: wordpress
               kubes: 2
+          persistentDisks:
+            - name: wordpress-persistent-storage
+              pdSize: 1
     - name: M
       recommended: yes
       goodFor: regular use
@@ -39,9 +41,12 @@ kuberdock:
           kubeType: 1
           containers:
             - name: worker
-              kubes: 6
+              kubes: 2
             - name: wordpress
               kubes: 4
+          persistentDisks:
+            - name: wordpress-persistent-storage
+              pdSize: 1
     - name: L
       goodFor: business
       publicIP: true
@@ -51,9 +56,12 @@ kuberdock:
           kubeType: 2
           containers:
             - name: worker
-              kubes: 4
-            - name: wordpress
               kubes: 2
+            - name: wordpress
+              kubes: 8
+          persistentDisks:
+            - name: wordpress-persistent-storage
+              pdSize: 2
 spec:
   replicas: 1
   selector:
@@ -63,6 +71,10 @@ spec:
       labels:
         app: wordpress
     spec:
+      volumes:
+      - name: wordpress-persistent-storage
+        persistentDisk:
+          pdName: wordpress_www_$USERNAME$
       restartPolicy: OnFailure
       containers:
       - image: wordpress:4.5.2-apache
@@ -75,11 +87,16 @@ spec:
           value: root
         - name: WORDPRESS_DB_PASSWORD
           value: j48tu24^cnRJiX*HiaTg[}
+        - name: WORDPRESS_DB_NAME
+          value: $USERNAME$-wordpress
         ports:
           - containerPort: 80
-      - image: prefer/worker:0.8
+        volumeMounts:
+        - mountPath: /var/www/html
+          name: wordpress-persistent-storage
+        workingDir: /var/www/html
+      - image: prefer/worker:0.10
         name: worker
-        #imagePullPolicy: Always
         env:
         - name: KD_APP_ID
           value: $PD_RAND|default:autogen|PD rand$
@@ -88,10 +105,3 @@ spec:
         - main.py
         - $USERNAME$
         - $USERNAME$.cl-owncloud.space
-
-#        volumeMounts:
-#        - mountPath: /var/lib/mysql
-#          name: mariadb-storage
-#      volumes:
-#      - name: mariadb-storage
-#        emptyDir: {}
